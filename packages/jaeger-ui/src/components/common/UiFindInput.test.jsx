@@ -61,9 +61,6 @@ describe('UiFind', () => {
 
       // Test that the input has empty value when uiFind is undefined
       expect(screen.getByPlaceholderText('Find...')).toHaveValue('');
-
-      // Test that no clear icon is present when allowClear is not set
-      expect(screen.queryByTestId('clear-icon')).not.toBeInTheDocument();
     });
 
     it('renders props.uiFind when state.ownInputValue is `undefined`', () => {
@@ -174,31 +171,6 @@ describe('UiFind', () => {
       expect(screen.getByPlaceholderText('Find...')).toHaveValue('def');
     });
 
-    it('clears value immediately when clicked', async () => {
-      const { rerender } = render(<UnconnectedUiFindInput {...props} allowClear uiFind={uiFind} />);
-      const clearIcon = screen.getByTestId('clear-icon');
-
-      await userEvent.click(clearIcon);
-
-      // Verify the URL update was triggered
-      expect(updateUiFindSpy).toHaveBeenLastCalledWith({
-        navigate: mockNavigate,
-        location: mockLocation,
-        uiFind: undefined,
-      });
-      expect(flushMock).toHaveBeenCalledTimes(1);
-
-      // Verify the value hasn't changed yet (before props update)
-      expect(screen.getByPlaceholderText('Find...')).toHaveValue(uiFind);
-
-      // Use rerender to update the component with new props
-      const updatedProps = { ...props, uiFind: undefined };
-      rerender(<UnconnectedUiFindInput {...updatedProps} allowClear />);
-
-      // Now the assertion will find only one input
-      expect(screen.getByPlaceholderText('Find...')).toHaveValue('');
-    });
-
     it('triggers pending queryParameter updates', async () => {
       render(<UnconnectedUiFindInput {...props} />);
       screen.getByPlaceholderText('Find...').blur();
@@ -208,47 +180,43 @@ describe('UiFind', () => {
   });
 
   describe('clear uiFind', () => {
-    it('renders clear icon iff clear is enabled and value is a string with at least one character', () => {
-      const { rerender } = render(<UnconnectedUiFindInput {...props} allowClear />);
-      expect(screen.queryByTestId('clear-icon')).not.toBeInTheDocument();
+    const getClearButtons = container => container.querySelectorAll('.ant-input-clear-icon');
 
-      rerender(<UnconnectedUiFindInput {...props} allowClear uiFind="" />);
-      expect(screen.queryByTestId('clear-icon')).not.toBeInTheDocument();
+    it('renders a single clear button, hidden while the input is empty', () => {
+      const { container, rerender } = render(<UnconnectedUiFindInput {...props} />);
+      expect(getClearButtons(container)).toHaveLength(1);
+      expect(getClearButtons(container)[0]).toHaveClass('ant-input-clear-icon-hidden');
 
-      rerender(<UnconnectedUiFindInput {...props} allowClear uiFind={uiFind} />);
-      expect(screen.getByTestId('clear-icon')).toBeInTheDocument();
-
-      rerender(<UnconnectedUiFindInput {...props} allowClear={false} uiFind={uiFind} />);
-      expect(screen.queryByTestId('clear-icon')).not.toBeInTheDocument();
-
-      rerender(<UnconnectedUiFindInput {...props} allowClear uiFind={uiFind} />);
-      userEvent.clear(screen.getByPlaceholderText('Find...'));
-      expect(screen.queryByTestId('clear-icon')).not.toBeInTheDocument();
+      rerender(<UnconnectedUiFindInput {...props} uiFind={uiFind} />);
+      expect(getClearButtons(container)).toHaveLength(1);
+      expect(getClearButtons(container)[0]).not.toHaveClass('ant-input-clear-icon-hidden');
     });
 
-    it('clears value immediately when clicked', async () => {
-      const { rerender } = render(<UnconnectedUiFindInput {...props} allowClear uiFind={uiFind} />);
-      const clearIcon = screen.getByTestId('clear-icon');
+    it('clears the value and the uiFind param when clicked', async () => {
+      const { container } = render(<UnconnectedUiFindInput {...props} uiFind={uiFind} />);
+      await userEvent.click(getClearButtons(container)[0]);
 
-      await userEvent.click(clearIcon);
-
-      // Verify the URL update was triggered
+      expect(screen.getByPlaceholderText('Find...')).toHaveValue('');
       expect(updateUiFindSpy).toHaveBeenLastCalledWith({
         navigate: mockNavigate,
         location: mockLocation,
-        uiFind: undefined,
+        trackFindFunction: undefined,
+        uiFind: '',
       });
-      expect(flushMock).toHaveBeenCalledTimes(1);
+    });
 
-      // Verify the value hasn't changed yet (before props update)
-      expect(screen.getByPlaceholderText('Find...')).toHaveValue(uiFind);
+    it('clears a typed value when clicked', async () => {
+      const { container } = render(<UnconnectedUiFindInput {...props} uiFind={uiFind} />);
+      await userEvent.type(screen.getByPlaceholderText('Find...'), ownInputValue);
+      await userEvent.click(getClearButtons(container)[0]);
 
-      // Use rerender to update the component with new props
-      const updatedProps = { ...props, uiFind: undefined };
-      rerender(<UnconnectedUiFindInput {...updatedProps} allowClear />);
-
-      // Now the assertion will find only one input
       expect(screen.getByPlaceholderText('Find...')).toHaveValue('');
+      expect(updateUiFindSpy).toHaveBeenLastCalledWith({
+        navigate: mockNavigate,
+        location: mockLocation,
+        trackFindFunction: undefined,
+        uiFind: '',
+      });
     });
   });
 
