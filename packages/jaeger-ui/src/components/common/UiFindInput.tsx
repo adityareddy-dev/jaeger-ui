@@ -3,7 +3,6 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Input, InputRef } from 'antd';
-import { IoClose } from 'react-icons/io5';
 import { useNavigate, useLocation } from 'react-router-dom';
 import _debounce from 'lodash/debounce';
 import _isString from 'lodash/isString';
@@ -13,7 +12,6 @@ import { TNil } from '../../types/index';
 import parseQuery from '../../utils/parseQuery';
 
 type TOwnProps = {
-  allowClear?: boolean;
   inputProps?: Record<string, any>;
   trackFindFunction?: (str: string | TNil) => void;
   uiFind?: string;
@@ -27,7 +25,6 @@ const defaultProps: Partial<TProps> = {
 
 export const UnconnectedUiFindInput = React.forwardRef<InputRef, TProps>((props, ref) => {
   const {
-    allowClear,
     inputProps,
     trackFindFunction,
     uiFind: uiFindProp,
@@ -63,11 +60,6 @@ export const UnconnectedUiFindInput = React.forwardRef<InputRef, TProps>((props,
     };
   }, [updateUiFindQueryParam]);
 
-  const clearUiFind = useCallback(() => {
-    updateUiFindQueryParam();
-    updateUiFindQueryParam.flush();
-  }, [updateUiFindQueryParam]);
-
   const handleInputBlur = useCallback(() => {
     updateUiFindQueryParam.flush();
     setOwnInputValue(undefined);
@@ -83,14 +75,6 @@ export const UnconnectedUiFindInput = React.forwardRef<InputRef, TProps>((props,
   );
 
   const inputValue = _isString(ownInputValue) ? ownInputValue : prevUiFind;
-  const suffix = (
-    <>
-      {allowClear && inputValue && inputValue.length > 0 && (
-        <IoClose data-testid="clear-icon" onClick={clearUiFind} />
-      )}
-      {inputProps?.suffix}
-    </>
-  );
 
   return (
     <Input
@@ -99,7 +83,6 @@ export const UnconnectedUiFindInput = React.forwardRef<InputRef, TProps>((props,
       onBlur={handleInputBlur}
       onChange={handleInputChange}
       ref={ref}
-      suffix={suffix}
       value={inputValue}
       allowClear
     />
